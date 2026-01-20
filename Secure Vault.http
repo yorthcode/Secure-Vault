@@ -3,4 +3,3 @@
 GET {{Secure_Vault_HostAddress}}/weatherforecast/
 Accept: application/json
 
-###
