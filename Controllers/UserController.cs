@@ -15,13 +15,14 @@ namespace Secure_Vault.Controllers
         {
             this.db = db;
         }
+
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterDTO dto)
         {
             if (await db.Users.AnyAsync(u => u.Username == dto.Username))
                 return BadRequest("User exists");
 
-            var user = new User
+            User user = new User
             {
                 Username = dto.Username,
                 PasswordEncrypted = dto.PasswordEncrypted,

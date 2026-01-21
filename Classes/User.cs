@@ -5,8 +5,8 @@ namespace Secure_Vault.Classes
 {
     public enum Role
     {
-        User,
-        TeamLead,
+        Admin,
+        Lead,
         Developer
     }
     public class User

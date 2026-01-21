@@ -2,11 +2,6 @@
 
 namespace Secure_Vault.Classes
 {
-    public enum SecretRole
-    {
-        Lead,
-        Developer
-    }
     public class Secret
     {
         [Key]
