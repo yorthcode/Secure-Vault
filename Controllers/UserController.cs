@@ -17,23 +17,30 @@ namespace Secure_Vault.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register(RegisterDTO dto)
+        public async Task<IActionResult> Register([FromBody] RegisterDTO dto)
         {
             if (await db.Users.AnyAsync(u => u.Username == dto.Username))
-                return BadRequest("User exists");
+                return BadRequest(new
+                {
+                    message = "User exists",
+                });
 
             User user = new User
             {
                 Username = dto.Username,
                 PasswordEncrypted = dto.PasswordEncrypted,
                 PublicKey = dto.PublicKey,
-                KDFSalt = dto.KDFSalt
+                KDFSalt = dto.KDFSalt,
+                Role = Role.Developer
             };
 
             db.Users.Add(user);
             await db.SaveChangesAsync();
 
-            return Ok("Registered");
+            return Ok(new 
+            {
+                message = "Registered",
+            });
         }
     }
 }

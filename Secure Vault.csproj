@@ -33,7 +33,6 @@
   <ItemGroup>
     <Folder Include="Frontend React\" />
     <Folder Include="Properties\" />
-    <Folder Include="Services\" />
     <Folder Include="Security\" />
   </ItemGroup>
 

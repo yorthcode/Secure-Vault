@@ -22,14 +22,20 @@ namespace Secure_Vault.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login(LoginDTO dto)
+        public async Task<IActionResult> Login([FromBody] LoginDTO dto)
         {
-            User loggedInUser = await db.Users.SingleAsync(u => u.Username == dto.Username);
+            User loggedInUser = await db.Users.SingleOrDefaultAsync(u => u.Username == dto.Username);
             if (loggedInUser == null)
-                return Unauthorized("Invalid username");
+                return Unauthorized(new
+                {
+                    message = "Invalid username",
+                });
 
             if (!CryptographicOperations.FixedTimeEquals(Convert.FromBase64String(loggedInUser.PasswordEncrypted), Convert.FromBase64String(dto.PasswordEncrypted)))
-                return Unauthorized("Invalid password");
+                return Unauthorized(new
+                {
+                    message = "Invalid password",
+                });
 
             List<Claim> claims = new List<Claim>
             {
@@ -41,14 +47,20 @@ namespace Secure_Vault.Controllers
             ClaimsIdentity identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
-            return Ok("Logged in");
+            return Ok(new
+            {
+                message = "Logged in",
+            });
         }
 
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync();
-            return Ok();
+            return Ok(new
+            {
+                message = "Logged out",
+            });
         }
     }
 }
