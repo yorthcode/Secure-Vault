@@ -1,11 +1,10 @@
-﻿using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Secure_Vault.Classes;
 using Secure_Vault.Database;
 using Secure_Vault.DTOs;
-using System.Security.Claims;
+using Secure_Vault.Services;
 using System.Security.Cryptography;
 
 namespace Secure_Vault.Controllers
@@ -15,16 +14,19 @@ namespace Secure_Vault.Controllers
     public class AuthController : ControllerBase
     {
         private readonly DatabaseContext db;
+        private readonly JWTService jwts;
 
-        public AuthController(DatabaseContext db)
+        public AuthController(DatabaseContext db, JWTService jwts)
         {
             this.db = db;
+            this.jwts = jwts;
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDTO dto)
         {
             User loggedInUser = await db.Users.SingleOrDefaultAsync(u => u.Username == dto.Username);
+
             if (loggedInUser == null)
                 return Unauthorized(new
                 {
@@ -37,30 +39,125 @@ namespace Secure_Vault.Controllers
                     message = "Invalid password",
                 });
 
-            List<Claim> claims = new List<Claim>
+            String refresh = jwts.CreateRefreshToken();
+
+            Response.Cookies.Append("token", jwts.CreateToken(loggedInUser), new CookieOptions
             {
-                new Claim(ClaimTypes.NameIdentifier, loggedInUser.Id.ToString()),
-                new Claim(ClaimTypes.Name, loggedInUser.Username),
-                new Claim(ClaimTypes.Role, loggedInUser.Role.ToString())
-            };
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddMinutes(10)
+            });
 
-            ClaimsIdentity identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            Response.Cookies.Append("refresh", refresh, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddDays(7)
+            });
 
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+            loggedInUser.RefreshToken = refresh;
+            loggedInUser.RefreshTokenExpire = DateTime.UtcNow.AddDays(7);
+
+            await db.SaveChangesAsync();
+
             return Ok(new
             {
                 message = "Logged in",
             });
         }
-
+        [Authorize]
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
-            await HttpContext.SignOutAsync();
+            String RefreshToken = Request.Cookies["refresh"];
+            User user = await db.Users.SingleOrDefaultAsync(u => u.RefreshToken ==  RefreshToken);
+            if (user != null)
+            {
+                user.RefreshToken = "0";
+                user.RefreshTokenExpire = DateTime.UtcNow;
+                await db.SaveChangesAsync();
+            }
+
+            Response.Cookies.Append("token", "0", new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddMinutes(10)
+            });
+
+            Response.Cookies.Append("refresh", "0", new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddDays(7)
+            });
+
             return Ok(new
             {
                 message = "Logged out",
             });
+        }
+
+        [Authorize]
+        [HttpGet("status")]
+        public async Task<IActionResult> Status()
+        {
+            return Ok(new
+            {       
+                message = "Logged in"
+            });
+        }
+
+        [Authorize]
+        [HttpGet("refresh")]
+        public async Task<IActionResult> Refresh()
+        {
+            String req = Request.Cookies["refresh"];
+            if (req == null)
+                return Unauthorized(new
+                {
+                    message = "No refresh token"
+                });
+
+            User user = await db.Users.SingleOrDefaultAsync(u => u.RefreshToken == req && u.RefreshTokenExpire > DateTime.UtcNow);
+            if (user == null)
+                return Unauthorized(new
+                {
+                    message = "Refresh token expired"
+                });
+
+            String RefreshToken = jwts.CreateRefreshToken();
+            user.RefreshToken = RefreshToken;
+            user.RefreshTokenExpire = DateTime.UtcNow.AddDays(7);
+
+            await db.SaveChangesAsync();
+
+            String Token = jwts.CreateToken(user);
+
+            Response.Cookies.Append("token", Token, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddMinutes(10)
+            });
+
+            Response.Cookies.Append("refresh", RefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddDays(7)
+            });
+
+            return Ok(new
+            {
+                message = "Refreshed"
+            }); 
         }
     }
 }

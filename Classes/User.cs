@@ -18,5 +18,7 @@ namespace Secure_Vault.Classes
         public String PublicKey { get; set; }
         public String KDFSalt { get; set; }
         public Role Role { get; set; }
+        public String RefreshToken { get; set; }
+        public DateTime RefreshTokenExpire { get; set; }
     }
 }

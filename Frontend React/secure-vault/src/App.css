@@ -4,9 +4,10 @@ body {
 }
 
 .content {
+
   max-width: 75%;
   color: white;
-  margin: 0 auto;
+  margin: 1rem auto;
   padding: 1rem;
   text-align: center;
   background-color: #111;

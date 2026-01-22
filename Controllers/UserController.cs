@@ -1,8 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Secure_Vault.Classes;
 using Secure_Vault.Database;
 using Secure_Vault.DTOs;
+using Secure_Vault.Services;
+using System.Security.Claims;
 
 namespace Secure_Vault.Controllers
 {
@@ -11,9 +14,11 @@ namespace Secure_Vault.Controllers
     public class UserController : ControllerBase
     {
         private readonly DatabaseContext db;
-        public UserController(DatabaseContext db)
+        private readonly JWTService jwts;
+        public UserController(DatabaseContext db, JWTService jwts)
         {
             this.db = db;
+            this.jwts = jwts;
         }
 
         [HttpPost("register")]
@@ -31,7 +36,9 @@ namespace Secure_Vault.Controllers
                 PasswordEncrypted = dto.PasswordEncrypted,
                 PublicKey = dto.PublicKey,
                 KDFSalt = dto.KDFSalt,
-                Role = Role.Developer
+                Role = Role.Developer,
+                RefreshToken = jwts.CreateRefreshToken(),
+                RefreshTokenExpire = DateTime.Now
             };
 
             db.Users.Add(user);
@@ -40,6 +47,23 @@ namespace Secure_Vault.Controllers
             return Ok(new 
             {
                 message = "Registered",
+            });
+        }
+        [Authorize]
+        [HttpGet("getsalt")]
+        public async Task<IActionResult> GetSalt()
+        {
+            String claim = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+            if (claim == null)
+                return Unauthorized();
+
+            User user = await db.Users.SingleOrDefaultAsync(u => u.Id.ToString() == claim);
+            if (user == null)
+                return Unauthorized();
+
+            return Ok(new
+            {
+                KDFSalt = user.KDFSalt
             });
         }
     }

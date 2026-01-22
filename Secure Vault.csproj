@@ -16,10 +16,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Properties\launchSettings.json" />
+    <Compile Remove="Properties\**" />
+    <Compile Remove="Security\**" />
+    <Content Remove="Properties\**" />
+    <Content Remove="Security\**" />
+    <EmbeddedResource Remove="Properties\**" />
+    <EmbeddedResource Remove="Security\**" />
+    <None Remove="Properties\**" />
+    <None Remove="Security\**" />
+    <_WebToolingArtifacts Remove="Properties\**" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.2" />
@@ -32,8 +41,6 @@
 
   <ItemGroup>
     <Folder Include="Frontend React\" />
-    <Folder Include="Properties\" />
-    <Folder Include="Security\" />
   </ItemGroup>
 
 </Project>
