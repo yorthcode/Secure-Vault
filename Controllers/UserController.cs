@@ -63,7 +63,7 @@ namespace Secure_Vault.Controllers
 
             return Ok(new
             {
-                KDFSalt = user.KDFSalt
+                salt = user.KDFSalt
             });
         }
     }
