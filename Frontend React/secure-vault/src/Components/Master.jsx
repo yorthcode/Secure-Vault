@@ -1,5 +1,4 @@
 import { useState, useContext } from "react";
-import GetKeys from "./GetKeys.jsx";
 import Fetch from "./Fetch.jsx";
 import { AuthContext, useAuth } from "./Auth.jsx";
 
@@ -70,7 +69,6 @@ function Master() {
             false,
             ['decrypt']
         );
-
 
         dispatch({ type: 'update', payload: { aes: aesKey, prk: privateKey } });
     }
