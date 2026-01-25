@@ -54,12 +54,6 @@ function RegisterPage() {
             ['encrypt', 'decrypt']
         );
 
-        
-        const rawbytes = await crypto.subtle.exportKey('raw', aesKey);
-        const rawkey = Array.from(new Uint8Array(rawbytes)).map(b => b.toString(16).padStart(2, '0')).join('');
-
-        console.log("Derived AES Key:", rawkey);
-
         const rsaKeys = await window.crypto.subtle.generateKey(
             {
                 name: 'RSA-OAEP',
@@ -86,8 +80,11 @@ function RegisterPage() {
         const EPKBase64 = btoa(String.fromCharCode(...new Uint8Array(encryptedPrivateKey)));
         const ivBase64 = btoa(String.fromCharCode(...iv));
 
-        localStorage.setItem('EPKB64', EPKBase64);
-        localStorage.setItem('IVB64', ivBase64);
+        const epkun = 'EPKB64'+username;
+        const ivun = 'IVB64'+username;
+
+        localStorage.setItem(epkun, EPKBase64);
+        localStorage.setItem(ivun, ivBase64);
         
         const passwordHash = btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(password)))));
 

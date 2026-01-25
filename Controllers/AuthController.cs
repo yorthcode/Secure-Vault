@@ -112,7 +112,6 @@ namespace Secure_Vault.Controllers
             });
         }
 
-        [Authorize]
         [HttpGet("refresh")]
         public async Task<IActionResult> Refresh()
         {

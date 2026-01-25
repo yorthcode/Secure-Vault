@@ -2,9 +2,9 @@
 {
     public class AddSecretDTO
     {
-        public String Username { get; set; }
+        //public String Username { get; set; }
         public String Name {  get; set; }
         public byte[] Data { get; set; }
-        public byte[] Envelope { get; set; }
+        public List<EnvelopeDTO> Envelopes { get; set; }
     }
 }

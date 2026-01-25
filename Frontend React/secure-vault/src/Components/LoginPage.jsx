@@ -28,10 +28,12 @@ function LoginPage() {
         const message = await Fetch('auth/login', 'POST', data);
         const response = await message.json();
 
-        if (!message.ok)
+        if (!message.ok) {
+            alert(response.message);
             return;
+        }
         else {
-            dispatch({type: 'login'});
+            dispatch({type: 'login', payload: {usern: username}});
             alert(response.message);
             navigate('/vault');
         }

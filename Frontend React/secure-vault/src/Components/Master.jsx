@@ -2,7 +2,7 @@ import { useState, useContext } from "react";
 import Fetch from "./Fetch.jsx";
 import { AuthContext, useAuth } from "./Auth.jsx";
 
-function Master() {
+function Master({ success }) {
     const [masterPassword, setMasterPassword] = useState("");
     const {state, dispatch} = useContext(AuthContext);
 
@@ -19,6 +19,7 @@ function Master() {
 
         const KDFSalt = new Uint8Array(respjson.salt.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
 
+        try {
         const enc = new TextEncoder();        
         const material = await window.crypto.subtle.importKey(
             'raw',
@@ -41,14 +42,11 @@ function Master() {
             ['encrypt', 'decrypt']
         );
 
+        const ivun = 'IVB64'+state.user;
+        const epkun = 'EPKB64'+state.user;
 
-        const rawbytes = await crypto.subtle.exportKey('raw', aesKey);
-        const rawkey = Array.from(new Uint8Array(rawbytes)).map(b => b.toString(16).padStart(2, '0')).join('');
-
-        console.log("Derived AES Key:", rawkey);
-
-        const iv = Uint8Array.from(atob(localStorage.getItem('IVB64')), c => c.charCodeAt(0));
-        const epk = Uint8Array.from(atob(localStorage.getItem('EPKB64')), c => c.charCodeAt(0)).buffer;
+        const iv = Uint8Array.from(atob(localStorage.getItem(ivun)), c => c.charCodeAt(0));
+        const epk = Uint8Array.from(atob(localStorage.getItem(epkun)), c => c.charCodeAt(0)).buffer;
 
         const privateKeyBuffer = await window.crypto.subtle.decrypt(
             {
@@ -71,6 +69,12 @@ function Master() {
         );
 
         dispatch({ type: 'update', payload: { aes: aesKey, prk: privateKey } });
+
+        success();
+        } catch (error) {
+            alert("Invalid master password!");
+            console.log(error);
+        } 
     }
 
     return (
@@ -78,7 +82,7 @@ function Master() {
             <div>
                 <form onSubmit={handleSubmit}>
                     <label>
-                        Master Password (can be changed):
+                        Master Password:
                     </label>
                     <br />
                     <input type="password" value={masterPassword} onChange={(e) => setMasterPassword(e.target.value)} required/>

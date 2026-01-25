@@ -7,6 +7,7 @@ import RegisterPage from './Components/RegisterPage.jsx'
 import './App.css'
 import NavigationBar from './Components/NavigationBar.jsx'
 import { AuthContext, useAuth } from './Components/Auth.jsx'
+import AddSecret from './Components/AddSecret.jsx'
 
 function App() {
   const { state, dispatch } = useAuth();
@@ -21,6 +22,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/vault" element={<VaultPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/addsecret" element={<AddSecret />} />
         </Route>
 
         <Route path="*" element={<div><NavigationBar /><div className='content'><h2>404 - Page not found</h2></div></div>} />
