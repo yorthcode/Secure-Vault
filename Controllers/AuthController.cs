@@ -5,6 +5,7 @@ using Secure_Vault.Classes;
 using Secure_Vault.Database;
 using Secure_Vault.DTOs;
 using Secure_Vault.Services;
+using System.Security.Claims;
 using System.Security.Cryptography;
 
 namespace Secure_Vault.Controllers
@@ -46,7 +47,7 @@ namespace Secure_Vault.Controllers
                 HttpOnly = true,
                 Secure = true,
                 SameSite = SameSiteMode.None,
-                Expires = DateTime.UtcNow.AddMinutes(10)
+                Expires = DateTime.UtcNow.AddMinutes(2)
             });
 
             Response.Cookies.Append("refresh", refresh, new CookieOptions
@@ -65,6 +66,7 @@ namespace Secure_Vault.Controllers
             return Ok(new
             {
                 message = "Logged in",
+                role = loggedInUser.Role
             });
         }
         [Authorize]
@@ -85,7 +87,7 @@ namespace Secure_Vault.Controllers
                 HttpOnly = true,
                 Secure = true,
                 SameSite = SameSiteMode.None,
-                Expires = DateTime.UtcNow.AddMinutes(10)
+                Expires = DateTime.UtcNow.AddMinutes(2)
             });
 
             Response.Cookies.Append("refresh", "0", new CookieOptions
@@ -106,9 +108,25 @@ namespace Secure_Vault.Controllers
         [HttpGet("status")]
         public async Task<IActionResult> Status()
         {
+            String claim = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+            if (claim == null)
+                return Unauthorized(new
+                {
+                    message = "Not logged in"
+                });
+
+            User user = await db.Users.SingleOrDefaultAsync(u => u.Id.ToString() == claim);
+            if (user == null)
+                return Unauthorized(new
+                {
+                    message = "User not found"
+                });
+
             return Ok(new
             {       
-                message = "Logged in"
+                message = "Logged in",
+                uname = user.Username,
+                role = user.Role
             });
         }
 
@@ -122,7 +140,7 @@ namespace Secure_Vault.Controllers
                     message = "No refresh token"
                 });
 
-            User user = await db.Users.SingleOrDefaultAsync(u => u.RefreshToken == req && u.RefreshTokenExpire > DateTime.UtcNow);
+            User user = await db.Users.SingleOrDefaultAsync(u => u.RefreshToken == req && DateTime.Compare(u.RefreshTokenExpire, DateTime.UtcNow) > 0);
             if (user == null)
                 return Unauthorized(new
                 {
@@ -142,7 +160,7 @@ namespace Secure_Vault.Controllers
                 HttpOnly = true,
                 Secure = true,
                 SameSite = SameSiteMode.None,
-                Expires = DateTime.UtcNow.AddMinutes(10)
+                Expires = DateTime.UtcNow.AddMinutes(2)
             });
 
             Response.Cookies.Append("refresh", RefreshToken, new CookieOptions
@@ -155,7 +173,9 @@ namespace Secure_Vault.Controllers
 
             return Ok(new
             {
-                message = "Refreshed"
+                message = "Refreshed",
+                uname = user.Username,
+                role = user.Role
             }); 
         }
     }

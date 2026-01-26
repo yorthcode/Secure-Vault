@@ -7,7 +7,8 @@ const InitialAuthContext = {
     loggedIn: false,
     aes: null,
     prk: null,
-    user: null
+    user: null,
+    role: null
 }
 
 function AuthStateReducer(state, action) {
@@ -17,13 +18,15 @@ function AuthStateReducer(state, action) {
                 ...state,
                 initialized: true,
                 loggedIn: action.payload.loggedIn,
-                user: action.payload.usern
+                user: action.payload.usern,
+                role: action.payload.userr
             };
         case 'login':
             return {
                 ...state,
                 loggedIn: true,
-                user: action.payload.usern
+                user: action.payload.usern,
+                role: action.payload.userr
             };
         case 'logout':
             return {
@@ -31,18 +34,14 @@ function AuthStateReducer(state, action) {
                 loggedIn: false,
                 aes: null,
                 prk: null,
-                user: null
+                user: null,
+                role: null
             }
         case 'update':
             return {
                 ...state,
                 aes: action.payload.aes,
                 prk: action.payload.prk
-            }
-        case 'addname':
-            return {
-                ...state,
-                user: action.payload.usern
             }
         default:
             throw new Error(`Unhandled action type: ${action.type}`);
@@ -57,18 +56,13 @@ function useAuth() {
         
         async function checkAuth() {
             const message = await Fetch('auth/status', 'GET');
-
-            if (!message.ok)
-            {
-                const refresh = await Fetch('auth/refresh', 'GET');
-                if (!refresh.ok)
-                    dispatch({ type: 'initialize', payload: { loggedIn: false } });
-                else {
-                    dispatch({ type: 'initialize', payload: { loggedIn: true } });
-                }
+            if (!message.ok){
+                dispatch({type: 'initialize', payload: { loggedIn: false}});
+                return;
             }
-            else if (message.ok) {
-                dispatch({ type: 'initialize', payload: { loggedIn: true } });
+            else {
+                const msgjson = await message.json();
+                dispatch({type: 'initialize', payload: { loggedIn: true, usern: msgjson.uname, userr: msgjson.role }});
             }
         }
 

@@ -32,7 +32,9 @@ namespace Secure_Vault.Controllers
             Secret secret = new Secret
             {
                 Name = dto.Name,
-                Data = dto.Data
+                Data = dto.Data,
+                IV = dto.IV,
+                UsernameOwner = dto.UsernameOwner
             };
             db.Secrets.Add(secret);
 
@@ -48,7 +50,7 @@ namespace Secure_Vault.Controllers
                 {
                     UserObj = user,
                     SecretObj = secret,
-                    Envelope = e.Envelope
+                    Envelope = e.Envelope,
                 });
             }
 
@@ -88,11 +90,74 @@ namespace Secure_Vault.Controllers
             });
         }
 
-        //[Authorize]
-        //[HttpDelete("delete")]
-        //public async Task<IActionResult> Delete()
-        //{
+        [Authorize]
+        [HttpDelete("delete")]
+        public async Task<IActionResult> Delete([FromBody] DeleteSecretDTO dto)
+        {
+            String claim = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+            if (claim == null)
+                return Unauthorized(new
+                {
+                    message = "Not logged in"
+                });
 
-        //}
+            User user = await db.Users.SingleOrDefaultAsync(u => u.Id.ToString() == claim);
+            if (user == null)
+                return Unauthorized(new
+                {
+                    message = "User not found"
+                });
+
+
+            Secret sec = await db.Secrets.SingleOrDefaultAsync(s => s.UsernameOwner == dto.UsernameOwner && s.Name == dto.Name);
+            if (sec == null)
+                return BadRequest(new
+                {
+                    message = "Secret not found"
+                });
+
+            db.Secrets.Remove(sec);
+
+            foreach (SecretKey sk in db.SecretKeys.Where(sk=> sk.SecretObjId == sec.Id))
+                db.SecretKeys.Remove(sk);
+
+            await db.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Secret deleted"
+            });
+        }
+
+        [Authorize]
+        [HttpPost("update")]
+        public async Task<IActionResult> Update(UpdateSecretDTO dto)
+        {
+            String claim = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+            if (claim == null)
+                return Unauthorized(new
+                {
+                    message = "Not logged in"
+                });
+
+            User user = await db.Users.SingleOrDefaultAsync(u => u.Id.ToString() == claim);
+            if (user == null)
+                return Unauthorized(new
+                {
+                    message = "User not found"
+                });
+
+            Secret sec = await db.Secrets.SingleOrDefaultAsync(s => dto.UsernameOwner == s.UsernameOwner && s.Name == dto.Name);
+            sec.Data = dto.Data;
+
+            db.Secrets.Update(sec);
+
+            await db.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Secret updated"
+            });
+        }
     }
 }

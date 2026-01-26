@@ -3,20 +3,13 @@ import { AuthContext, useAuth } from "./Auth.jsx";
 import { useNavigate } from "react-router-dom";
 import Fetch from "./Fetch.jsx";
 
-function AddSecret() {
+function AddSecretPage() {
     const [secretName, setSecretName] = useState('');
     const [secretText, setSecretText] = useState('');
     const {state, dispatch} = useContext(AuthContext);
     const navigate = useNavigate();
-    const [encData, setEncData] = useState();
-    const [envelope, setEnvelope] = useState();
-
-    useEffect(() => {
-        if (state.initialized == false  || state.loggedIn == false) {
-            navigate("/login");
-        }
-    }, [state, navigate])
-
+    const [disabled, setDisabled] = useState(false);
+    
     let cachedPublicKeys = null;
 
     async function GetPubKeys() {
@@ -44,6 +37,8 @@ function AddSecret() {
     }
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        setDisabled(true);
 
         const usersKeys = await GetPubKeys();
 
@@ -86,16 +81,20 @@ function AddSecret() {
         const data = {
             Name: secretName,
             Data: arrayBufferToBase64(encryptedData),
-            Envelopes: envelopes
+            Envelopes: envelopes,
+            IV: localStorage.getItem(ivun),
+            UsernameOwner: state.user
         }
 
         const response = await Fetch("secret/create", 'POST', data);
         const msg = await response.json();
 
-        alert(msg.message);
-        if (msg.ok) {
-            //navigate("/vault");
+        if (response.ok) {
+            alert(msg.message);
+            navigate("/vault");
         }
+
+        setDisabled(false);
     }
 
     return (
@@ -119,11 +118,11 @@ function AddSecret() {
                     <input type="text" value={secretText} onChange={(e) => setSecretText(e.target.value)} required />
                     <br />
                     <br />
-                    <button type="submit">Create</button>
+                    <button type="submit" disabled={disabled}>Create</button>
                 </form>
             </div>
         </>
     )
 }
 
-export default AddSecret;
+export default AddSecretPage;

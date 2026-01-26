@@ -6,17 +6,14 @@ import { AuthContext, useAuth } from './Auth.jsx';
 function LoginPage() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [disabled, setDisabled] = useState(false);
     const {state, dispatch} = useContext(AuthContext);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        if (state.initialized && state.loggedIn) {
-            navigate('/vault');
-        }
-    }, [state, navigate]);
-
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        setDisabled(true);
 
         const enc = new TextEncoder();
 
@@ -30,11 +27,13 @@ function LoginPage() {
 
         if (!message.ok) {
             alert(response.message);
+            setDisabled(false);
             return;
         }
         else {
-            dispatch({type: 'login', payload: {usern: username}});
+            dispatch({type: 'login', payload: {usern: username, userr: response.role }});
             alert(response.message);
+            setDisabled(false);
             navigate('/vault');
         }
     }
@@ -60,7 +59,7 @@ function LoginPage() {
                     <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required/>
                     <br />
                     <br />
-                    <button type="submit">Login</button>
+                    <button type="submit" disabled={disabled}>Login</button>
                 </form>
             </div>
         </>

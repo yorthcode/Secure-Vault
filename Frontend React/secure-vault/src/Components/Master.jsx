@@ -5,6 +5,7 @@ import { AuthContext, useAuth } from "./Auth.jsx";
 function Master({ success }) {
     const [masterPassword, setMasterPassword] = useState("");
     const {state, dispatch} = useContext(AuthContext);
+    const [disabled, setDisabled] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -13,6 +14,8 @@ function Master({ success }) {
             alert("Please enter the master password.");
             return;
         }
+
+        setDisabled(true);
         
         const response = await Fetch('user/getsalt', 'GET');
         const respjson = await response.json()
@@ -69,11 +72,13 @@ function Master({ success }) {
         );
 
         dispatch({ type: 'update', payload: { aes: aesKey, prk: privateKey } });
-
         success();
+
+        setDisabled(false);
+
         } catch (error) {
             alert("Invalid master password!");
-            console.log(error);
+            setDisabled(false);
         } 
     }
 
@@ -88,7 +93,7 @@ function Master({ success }) {
                     <input type="password" value={masterPassword} onChange={(e) => setMasterPassword(e.target.value)} required/>
                     <br />
                     <br />
-                    <button type="submit">Confirm</button>
+                    <button type="submit" disabled={disabled}>Confirm</button>
                 </form>
             </div>
         </>

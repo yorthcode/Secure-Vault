@@ -55,65 +55,40 @@ namespace Secure_Vault.Controllers
         {
             String claim = User.FindFirst(ClaimTypes.NameIdentifier).Value;
             if (claim == null)
-                return Unauthorized();
+                return Unauthorized(new
+                {
+                    message = "Not logged in"
+                });
 
             User user = await db.Users.SingleOrDefaultAsync(u => u.Id.ToString() == claim);
             if (user == null)
-                return Unauthorized();
+                return Unauthorized(new
+                {
+                    message = "User not found"
+                });
 
             return Ok(new
             {
                 salt = user.KDFSalt
             });
         }
-
-        [Authorize]
-        [HttpGet("getrole")]
-        public async Task<IActionResult> GetRole()
-        {
-            String claim = User.FindFirst(ClaimTypes.NameIdentifier).Value;
-            if (claim == null)
-                return Unauthorized();
-
-            User user = await db.Users.SingleOrDefaultAsync(u => u.Id.ToString() == claim);
-            if (user == null)
-                return Unauthorized();
-
-            return Ok(new
-            {
-                role = user.Role
-            });
-        }
-
-        [Authorize]
-        [HttpGet("getuname")]
-        public async Task<IActionResult> GetUsername()
-        {
-            String claim = User.FindFirst(ClaimTypes.NameIdentifier).Value;
-            if (claim == null)
-                return Unauthorized();
-
-            User user = await db.Users.SingleOrDefaultAsync(u => u.Id.ToString() == claim);
-            if (user == null)
-                return Unauthorized();
-
-            return Ok(new
-            {
-                uname = user.Username
-            });
-        }
-
         [Authorize]
         [HttpGet("getpubkeys")]
         public async Task<IActionResult> GetPublicKey()
         {
             String claim = User.FindFirst(ClaimTypes.NameIdentifier).Value;
             if (claim == null)
-                return Unauthorized();
+                return Unauthorized(new
+                {
+                    message = "Not logged in"
+                });
 
             User user = await db.Users.SingleOrDefaultAsync(u => u.Id.ToString() == claim);
             if (user == null)
-                return Unauthorized();
+                return Unauthorized(new
+                {
+                    message = "User not found"
+                });
 
             List<String> pubkeyArray = new List<String>();
             List<String> userArray = new List<String>();
