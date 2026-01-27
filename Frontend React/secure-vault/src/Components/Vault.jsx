@@ -3,10 +3,8 @@ import { AuthContext, useAuth } from "./Auth.jsx";
 import Fetch from "./Fetch.jsx";
 
 function Vault() {
-    const [secrets, setSecrets] = useState([]);
+    const [secretChanged, setSecretChanged] = useState(false);
     const [secretsDecrypted, setSecretsDecrypted] = useState([]);
-    const [names, setNames] = useState([]);
-    const [envelopes, setEnvelopes] = useState([]);
     const { state, dispatch } = useContext(AuthContext);
 
     useEffect(() => {
@@ -41,9 +39,64 @@ function Vault() {
             }));
 
             setSecretsDecrypted(decrypted);
+            setSecretChanged(false);
         }
         decrypt();
-    }, [secrets, state]);
+    }, [state, secretChanged]);
+
+    const handleUpdate = async (name, data) => {
+        function arrayBufferToBase64(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let binary = "";
+            for (let i = 0; i < bytes.length; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary);
+        }
+
+        const updated = prompt("Enter the updated secret text", data);
+
+        const ivun = "IVB64"+state.user;
+        const buffer = new TextEncoder().encode(updated);
+
+        const encUpdData = await crypto.subtle.encrypt(
+            {
+                name: 'AES-GCM',
+                iv: Uint8Array.from(atob(localStorage.getItem(ivun)), c => c.charCodeAt(0))
+            },
+            state.aes,
+            buffer
+        );
+
+        const updData = {
+            UsernameOwner: state.user,
+            Name: name,
+            Data: arrayBufferToBase64(encUpdData)
+        };
+
+        const updateresp = await Fetch("secret/update", 'POST', updData);
+        const updrespjson = await updateresp.json();
+        
+        alert (updrespjson.message);
+        setSecretChanged(true);
+    }
+
+    const handleDelete = async (name) => {
+        const deleted = confirm("Are you sure you want to delete this secret?");
+        if (deleted) {
+            const delData = {
+                Name: name,
+                UsernameOwner: state.user
+            };
+
+            const resp = await Fetch("secret/delete", 'DELETE', delData);
+            const respjson = await resp.json();
+
+            alert(respjson.message);
+            setSecretChanged(true);
+        }
+            
+    }
 
      return (
         <>
@@ -56,8 +109,8 @@ function Vault() {
                             {s.data}
                             <div style={{display: 'flex'}}>
                                 {s.isowner ? (<>
-                                <button>Update</button>
-                                <button style={{marginLeft: 'auto'}}>Delete</button>
+                                <button onClick={() => handleUpdate(s.name, s.data)}>Update</button>
+                                <button style={{marginLeft: 'auto'}} onClick={() => handleDelete(s.name)}>Delete</button>
                                 </>) : null}
                             </div>
                         </div>
