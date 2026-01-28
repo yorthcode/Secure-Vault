@@ -27,7 +27,6 @@ function NavigationBar() {
           <div>
             {state.loggedIn == true ? (
               <div className='links'>
-               Signed in as {state.user}
               <Link to="/vault">Vault</Link>
               <Link to="/login" onClick={logout}>Logout</Link>
               </div>

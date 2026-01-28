@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using System.Numerics;
 
 namespace Secure_Vault.Classes
 {
@@ -20,5 +21,7 @@ namespace Secure_Vault.Classes
         public Role Role { get; set; }
         public String RefreshToken { get; set; }
         public DateTime RefreshTokenExpire { get; set; }
+        public String TOTPSecret { get; set; }
+        public long TOTPStep { get; set; }
     }
 }

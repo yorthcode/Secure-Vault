@@ -1,6 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using OtpNet;
 using Secure_Vault.Classes;
 using Secure_Vault.Database;
 using Secure_Vault.DTOs;
@@ -38,6 +41,19 @@ namespace Secure_Vault.Controllers
                 return Unauthorized(new
                 {
                     message = "Invalid password",
+                });
+
+            Totp totp = new Totp(Base32Encoding.ToBytes(loggedInUser.TOTPSecret));
+            if (!totp.VerifyTotp(dto.TOTP, out long timeStepMatched, new VerificationWindow()))
+                return Unauthorized(new
+                {
+                    message = "Invalid OTP code",
+                });
+
+            if (loggedInUser.TOTPStep != 0 && timeStepMatched <= loggedInUser.TOTPStep)
+                return Unauthorized(new
+                {
+                    message = "OTP code expired",
                 });
 
             String refresh = jwts.CreateRefreshToken();
@@ -177,6 +193,74 @@ namespace Secure_Vault.Controllers
                 uname = user.Username,
                 role = user.Role
             }); 
+        }
+
+        [HttpGet("google")]
+        public async Task<IActionResult> Google()
+        {
+            AuthenticationProperties props = new AuthenticationProperties
+            {
+                RedirectUri = "api/auth/google/callback"
+            };
+            return Challenge(props, GoogleDefaults.AuthenticationScheme);
+        }
+
+        [HttpGet("google/callback")]
+        public async Task<IActionResult> GoogleCallback()
+        {
+            AuthenticateResult result = HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme).Result;
+            if (!result.Succeeded)
+                return Unauthorized(new
+                {
+                    message = "Sign in failed"
+                });
+
+            String email = result.Principal.FindFirstValue(ClaimTypes.Email);
+
+            User u = await db.Users.SingleOrDefaultAsync(u => u.Username == email);
+
+            if (u == null)
+            {
+                u = new User
+                {
+                    Username = email,
+                    PasswordEncrypted = "DOESNOTEXIST",
+                    PublicKey = "",
+                    KDFSalt = "",
+                    Role = Role.Developer,
+                    RefreshToken = jwts.CreateRefreshToken(),
+                    RefreshTokenExpire = DateTime.Now,
+                    TOTPSecret = Base32Encoding.ToString(KeyGeneration.GenerateRandomKey(20)),
+                    TOTPStep = 0
+                };
+                db.Users.Add(u);
+            }
+
+            String RefreshToken = jwts.CreateRefreshToken();
+            u.RefreshToken = RefreshToken;
+            u.RefreshTokenExpire = DateTime.UtcNow.AddDays(7);
+           
+            await db.SaveChangesAsync();
+
+            String Token = jwts.CreateToken(u);
+
+            Response.Cookies.Append("token", Token, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddMinutes(2)
+            });
+
+            Response.Cookies.Append("refresh", RefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTime.UtcNow.AddDays(7)
+            });
+
+            return Redirect("http://localhost:5173/oidcinfo");
         }
     }
 }

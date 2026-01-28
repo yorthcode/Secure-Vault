@@ -15,13 +15,15 @@ function LoginPage() {
 
         setDisabled(true);
 
+        const TOTP = prompt("Enter your OTP Code");
         const enc = new TextEncoder();
-
         const passwordHash = btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(password)))));
         const data = {
             Username: username,
-            PasswordEncrypted: passwordHash
+            PasswordEncrypted: passwordHash,
+            TOTP: TOTP
         }
+
         const message = await Fetch('auth/login', 'POST', data);
         const response = await message.json();
 
@@ -61,6 +63,8 @@ function LoginPage() {
                     <br />
                     <button type="submit" disabled={disabled}>Login</button>
                 </form>
+                <br />
+                <button onClick={() => location.href = "https://localhost:7144/api/auth/google"}>Sign up with Google</button>
             </div>
         </>
     )

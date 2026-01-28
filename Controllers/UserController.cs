@@ -6,6 +6,7 @@ using Secure_Vault.Database;
 using Secure_Vault.DTOs;
 using Secure_Vault.Services;
 using System.Security.Claims;
+using OtpNet;
 
 namespace Secure_Vault.Controllers
 {
@@ -38,7 +39,9 @@ namespace Secure_Vault.Controllers
                 KDFSalt = dto.KDFSalt,
                 Role = Role.Developer,
                 RefreshToken = jwts.CreateRefreshToken(),
-                RefreshTokenExpire = DateTime.Now
+                RefreshTokenExpire = DateTime.Now,
+                TOTPSecret = Base32Encoding.ToString(KeyGeneration.GenerateRandomKey(20)),
+                TOTPStep = 0
             };
 
             db.Users.Add(user);
@@ -47,11 +50,12 @@ namespace Secure_Vault.Controllers
             return Ok(new 
             {
                 message = "Registered",
+                secret = user.TOTPSecret
             });
         }
         [Authorize]
-        [HttpGet("getsalt")]
-        public async Task<IActionResult> GetSalt()
+        [HttpGet("getinfo")]
+        public async Task<IActionResult> GetInfo()
         {
             String claim = User.FindFirst(ClaimTypes.NameIdentifier).Value;
             if (claim == null)
@@ -102,6 +106,35 @@ namespace Secure_Vault.Controllers
             {
                 pubkeys = pubkeyArray,
                 users = userArray
+            });
+        }
+
+        [Authorize]
+        [HttpPost("sendinfo")]
+        public async Task<IActionResult> SendInfo(SendInfoDTO dto)
+        {
+            String claim = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+            if (claim == null)
+                return Unauthorized(new
+                {
+                    message = "Not logged in"
+                });
+
+            User user = await db.Users.SingleOrDefaultAsync(u => u.Id.ToString() == claim);
+            if (user == null)
+                return Unauthorized(new
+                {
+                    message = "User not found"
+                });
+
+            user.KDFSalt = dto.KDFSalt;
+            user.PublicKey = dto.PublicKey;
+
+            await db.SaveChangesAsync();
+            return Ok(new
+            {
+                message = "Saved info",
+                totp = user.TOTPSecret
             });
         }
     }

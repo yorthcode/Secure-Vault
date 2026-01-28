@@ -1,7 +1,8 @@
 import { useContext, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import Fetch from './Fetch.jsx'
+import Fetch from './Fetch.jsx';
 import { AuthContext, useAuth } from './Auth.jsx';
+import QRCode from 'react-qr-code';
 
 function RegisterPage() {
     const [username, setUsername] = useState('');
@@ -10,6 +11,7 @@ function RegisterPage() {
     const [registered, setRegistered] = useState(false);
     const {state, dispatch} = useContext(AuthContext);
     const navigate = useNavigate();
+    const [OTPLink, setOTPLink] = useState('');
 
     useEffect(() => {
         if (state.initialized && state.loggedIn) {
@@ -100,6 +102,8 @@ function RegisterPage() {
         const message = await Fetch('user/register', 'POST', data);
         const response = await message.json();
 
+        setOTPLink(`otpauth://totp/Secure-Vault:${username}?secret=${response.secret}&issuer=Secure-Vault&digits=6`);
+
         if (message.ok) {
             setRegistered(true);
             alert(response.message);
@@ -133,11 +137,15 @@ function RegisterPage() {
                     <br />
                     <button type="submit">Register</button>
                 </form>
+                <br />
+                <button onClick={() => location.href = "https://localhost:7144/api/auth/google"}>Sign up with Google</button>
                 <p>Already have an account? Log in <Link to="/login">here</Link></p>
                 {registered ? (
                 <div>
-                    <p><strong>Your Master Password:</strong> {masterPassword}</p>
-                    <p>Save this password securely. It will not be shown again!</p>
+                    <p><strong>Your Master Password and Authenticator code:</strong></p> 
+                    <p>{masterPassword}</p>
+                    <p><QRCode value={OTPLink} className='QRCode'/></p>
+                    <p>Save this infomration securely. It will never be shown again!</p>
                 </div>
                 ) : <div /> }
             </div>

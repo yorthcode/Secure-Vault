@@ -19,7 +19,6 @@ function VaultPage() {
 
     return (
         <>
-
             {unlocked ? (
                 <>
                     <div>

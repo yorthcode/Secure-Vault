@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Secure_Vault.Services;
+using Microsoft.AspNetCore.Authentication.Google;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +21,7 @@ builder.Services.AddAuthentication(
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
         options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     }).AddJwtBearer("Bearer",
         options =>
         {
@@ -41,8 +43,16 @@ builder.Services.AddAuthentication(
                     return Task.CompletedTask;
                 }
             };
+        }).AddCookie().AddGoogle(options =>
+        {
+            options.ClientId = builder.Configuration["Google:ClientId"];
+            options.ClientSecret = builder.Configuration["Google:ClientSecret"];
+            options.Scope.Add("openid");
+            options.Scope.Add("profile");
+            options.Scope.Add("email");
+            options.SaveTokens = true;
         });
-builder.Services.AddCors(options => options.AddPolicy("AllowFrontend", policy => policy.WithOrigins("http://localhost:5173")
+builder.Services.AddCors(options => options.AddPolicy("AllowFrontend", policy => policy.WithOrigins("http://localhost:5173", "https://accounts.google.com", "https://localhost:7144")
 .AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
 
 var app = builder.Build();

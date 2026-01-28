@@ -10,6 +10,7 @@ import { AuthContext, useAuth } from './Components/Auth.jsx'
 import AddSecretPage from './Components/AddSecretPage.jsx'
 import RequireAuth from './Components/RequireAuth.jsx'
 import PublicElement from './Components/PublicElement.jsx'
+import OIDCInfoPage from './Components/OIDCInfoPage.jsx'
 
 function App() {
   const { state, dispatch } = useAuth();
@@ -23,6 +24,7 @@ function App() {
           <Route element={<RequireAuth />}>
             <Route path="/addsecret" element={<AddSecretPage />} />
             <Route path="/vault" element={<VaultPage />} />
+            <Route path="/oidcinfo" element={<OIDCInfoPage />} />
           </Route>
           <Route path="/register" element={<PublicElement> <RegisterPage /> </PublicElement>} />
           <Route path="/login" element={<PublicElement> <LoginPage /> </PublicElement>} />

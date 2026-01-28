@@ -17,7 +17,7 @@ function Master({ success }) {
 
         setDisabled(true);
         
-        const response = await Fetch('user/getsalt', 'GET');
+        const response = await Fetch('user/getinfo', 'GET');
         const respjson = await response.json()
 
         const KDFSalt = new Uint8Array(respjson.salt.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));

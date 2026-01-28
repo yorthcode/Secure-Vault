@@ -4,5 +4,6 @@
     {
         public String Username { get; set; }
         public String PasswordEncrypted {  get; set; }
+        public String TOTP { get; set; }
     }
 }
